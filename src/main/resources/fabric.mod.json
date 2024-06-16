@@ -35,9 +35,11 @@
     "fabric": "*"
   },
   "custom": {
-    "modupdater": {
-      "strategy": "curseforge",
-      "projectID": 390114
+    "modmenu": {
+      "links": {
+        "modmenu.discord": "https://discord.gg/9PAesuHFnp"
+      }
     }
-  }
+  },
+  "accessWidener": "fabrictailor.accesswidener"
 }

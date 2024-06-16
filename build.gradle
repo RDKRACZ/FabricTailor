@@ -1,157 +1,145 @@
-import com.modrinth.minotaur.TaskModrinthUpload
-
 plugins {
-	id 'fabric-loom' version '0.9-SNAPSHOT'
-	id 'maven-publish'
-	id "com.matthewprenger.cursegradle" version "1.4.0"
-	id "com.modrinth.minotaur" version "1.1.0"
+    id 'fabric-loom' version '1.6-SNAPSHOT'
+    id 'maven-publish'
+    id "com.matthewprenger.cursegradle" version "1.4.0"
+    id "com.modrinth.minotaur" version "2.+"
 }
-
-sourceCompatibility = JavaVersion.VERSION_16
-targetCompatibility = JavaVersion.VERSION_16
 
 archivesBaseName = project.archives_base_name
 version = project.mod_version
 group = project.maven_group
 
 repositories {
-	maven {
-		url 'https://oss.sonatype.org/content/repositories/snapshots'
-	}
-	maven {
-		url 'https://jitpack.io'
-	}
-	maven {
-		url 'https://masa.dy.fi/maven'
-	}
-	maven {
-		name = "TomTheGeek-repo"
-		url = "https://maven.tomthegeek.ml/releases/"
-	}
+    maven { url 'https://oss.sonatype.org/content/repositories/snapshots' }
+    maven { url 'https://maven.nucleoid.xyz' }
+    maven { url 'https://jitpack.io' }
+    maven { url 'https://masa.dy.fi/maven' }
+}
+
+loom {
+    accessWidenerPath = file("src/main/resources/fabrictailor.accesswidener")
 }
 
 def ENV = System.getenv()
 
 dependencies {
-	// To change the versions see the gradle.properties file
-	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
-	/*mappings loom.officialMojangMappings()/*loom.layered() {
-		officialMojangMappings()
-		parchment("org.parchmentmc.data:parchment-1.17.1:2021.08.23-nightly-SNAPSHOT@zip")
-	}*/
-	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    // To change the versions see the gradle.properties file
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.layered {
+        it.officialMojangMappings {
+            setNameSyntheticMembers(false)
+        }
+    }
 
-	// Fabric API. This is technically optional, but you probably want it anyway.
-	modApi "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-	// LuckPerms
-	modImplementation 'me.lucko:fabric-permissions-api:0.1-SNAPSHOT'
-	modCompileOnly('com.github.samolego.Taterzens:taterzens-fabric:1.3.0')
+    // Fabric API. This is technically optional, but you probably want it anyway.
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-	modRuntime("com.github.tom_the_geek:wdmnf:1.0.0+mc.1.17")
+    // Config2Brigadier
+    modImplementation(include("com.github.samolego.Config2Brigadier:config2brigadier-fabric:${project.c2b_lib_version}"))
 
-	//modRuntime("com.github.gnembon:fabric-carpet:${project.carpet_core_version}")
-	//modRuntime "com.github.gnembon:fabric-carpet:${project.carpet_branch}-SNAPSHOT"
-	modRuntime "carpet:fabric-carpet:${project.minecraft_version}-${project.carpet_core_version}"
+    // LuckPerms
+    modImplementation(include('me.lucko:fabric-permissions-api:0.2-SNAPSHOT'))
+
+    // Carpet
+    modCompileOnly("com.github.gnembon:fabric-carpet:${project.carpet_core_version}")
+    modCompileOnly('com.github.samolego.Taterzens:taterzens-fabric:1.11.6')
 }
 
 processResources {
-	inputs.property "version", project.version
+    inputs.property "version", project.version
 
-	filesMatching("fabric.mod.json") {
-		expand "version": project.version
-	}
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
 }
 
 tasks.withType(JavaCompile).configureEach {
-	// ensure that the encoding is set to UTF-8, no matter what the system default is
-	// this fixes some edge cases with special characters not displaying correctly
-	// see http://yodaconditions.net/blog/fix-for-java-file-encoding-problems-with-gradle.html
-	// If Javadoc is generated, this must be specified in that task too.
-	it.options.encoding = "UTF-8"
-
-	// Minecraft 1.17 (21w19a) upwards uses Java 16.
-	it.options.release = 16
+    it.options.release = 21
 }
 
 java {
-	// Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
-	// if it is present.
-	// If you remove this line, sources will not be generated.
-	withSourcesJar()
+    // Loom will automatically attach sourcesJar to a RemapSourcesJar task and to the "build" task
+    // if it is present.
+    // If you remove this line, sources will not be generated.
+    withSourcesJar()
 }
 
 jar {
-	from("LICENSE") {
-		rename { "${it}_${project.archivesBaseName}"}
-	}
+    from("LICENSE") {
+        rename { "${it}_${project.archivesBaseName}" }
+    }
 }
 
 // configure the maven publication
 publishing {
-	publications {
-		mavenJava(MavenPublication) {
-			// add all the jars that should be included when publishing to maven
-			artifact(remapJar) {
-				builtBy remapJar
-			}
-			artifact(sourcesJar) {
-				builtBy remapSourcesJar
-			}
-		}
-	}
+    publications {
+        mavenJava(MavenPublication) {
+            // add all the jars that should be included when publishing to maven
+            artifact(remapJar) {
+                builtBy remapJar
+            }
+            artifact(sourcesJar) {
+                builtBy remapSourcesJar
+            }
+        }
+    }
 
-	// See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
-	repositories {
-		// Add repositories to publish to here.
-		// Notice: This block does NOT have the same function as the block in the top level.
-		// The repositories here will be used for publishing your artifact, not for
-		// retrieving dependencies.
-	}
+    // See https://docs.gradle.org/current/userguide/publishing_maven.html for information on how to set up publishing.
+    repositories {
+        // Add repositories to publish to here.
+        // Notice: This block does NOT have the same function as the block in the top level.
+        // The repositories here will be used for publishing your artifact, not for
+        // retrieving dependencies.
+    }
 }
 
 // from FAPI https://github.com/FabricMC/fabric/blob/1.16/build.gradle
 curseforge {
-	if (ENV.CURSEFORGE_API_KEY) {
-		apiKey = ENV.CURSEFORGE_API_KEY
-	}
+    if (ENV.CURSEFORGE_API_KEY) {
+        apiKey = ENV.CURSEFORGE_API_KEY
+    }
 
-	project {
-		id = "390114"
-		changelog = "A changelog can be found at https://github.com/samolego/FabricTailor/releases/latest"
-		releaseType = "release"
-		addGameVersion "${project.minecraft_version}"
-		addGameVersion "Fabric"
+    project {
+        id = "390114"
+        changelog = "A changelog can be found at https://github.com/samolego/FabricTailor/releases/latest"
+        releaseType = "release"
+        addGameVersion "${project.minecraft_version}"
+        addGameVersion "Fabric"
 
-		mainArtifact(file("${project.buildDir}/libs/${archivesBaseName}-${version}.jar")) {
-			displayName = "[${project.minecraft_version}] FabricTailor ${version}"
-		}
+        mainArtifact(file("${project.buildDir}/libs/${archivesBaseName}-${version}.jar")) {
+            displayName = "[${project.minecraft_version}] FabricTailor ${version}"
+        }
 
-		afterEvaluate {
-			uploadTask.dependsOn("remapJar")
-		}
-	}
+        afterEvaluate {
+            uploadTask.dependsOn("remapJar")
+        }
+    }
 
-	options {
-		forgeGradleIntegration = false
-	}
+    options {
+        forgeGradleIntegration = false
+    }
 }
 
-task modrinth(type: TaskModrinthUpload, dependsOn: remapJar) {
-	onlyIf {
-		ENV.MODRINTH_TOKEN
-	}
 
-	token = ENV.MODRINTH_TOKEN
-	projectId = "g8w1NapE"
-	changelog = "A changelog can be found at https://github.com/samolego/FabricTailor/releases/latest"
-	versionNumber = version
-	versionName = "[${project.minecraft_version}] FabricTailor ${version}"
-	releaseType = "release"
+tasks.modrinth {
+    onlyIf {
+        ENV.MODRINTH_TOKEN
+    }
+}
 
-	uploadFile = file("${project.buildDir}/libs/${archivesBaseName}-${version}.jar")
+modrinth {
+    token = ENV.MODRINTH_TOKEN
+    projectId = "g8w1NapE"
+    changelog = ENV.CHANGELOG ?: "A changelog can be found at https://github.com/samolego/FabricTailor/releases/tag/${version}"
+    versionNumber = version
+    versionName = "[${project.minecraft_version}] FabricTailor ${version}"
+    versionType = "release"
 
-	addGameVersion("${project.minecraft_version}")
-	addLoader('fabric')
+    uploadFile = file("${project.buildDir}/libs/${archivesBaseName}-${version}.jar")
+
+    gameVersions = [project.minecraft_version]
+    loaders = ['fabric', 'quilt']
+
 }
